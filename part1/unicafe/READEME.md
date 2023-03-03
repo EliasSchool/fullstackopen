@@ -1,1 +1,1 @@
-excersices 1.6-1.10 
+# excersices 1.6-1.10 
