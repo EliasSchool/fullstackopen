@@ -1,8 +1,9 @@
-import { useState } from 'react'
-
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+import contacts from './services/persons'
 const Numbers = ({ persons }) => {
   return (
-    <li key={persons.name}>{persons.name} {persons.number}</li>
+    <li key={persons.id}>{persons.name} {persons.number}</li>
   )
 }
 
@@ -30,20 +31,26 @@ const Addperson =  (props) => {
   )
 }
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: 'Arto Hellas',
-      number: "040-1231244", 
-      id : 1}, 
-  ]) 
+  const [persons, setPersons] = useState([]) 
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
-  const [personsToShow, setPersonsToShow] = useState(persons)
+  const [filterName, setFilterName] = useState('')
+
+  useEffect(() => {
+    contacts
+      .GetPersons()
+      .then(response => {
+              setPersons(response.data)
+            }) 
+  }, [])
+
+
+
   const addNewPerson = (event) => {
     event.preventDefault()
     const numberObject = {
       name : newName,
       number: newNumber, 
-      id: persons.length + 1
     }
     const isPersonAdded = persons.some(person =>  {
       return person.name.toLowerCase() === newName.trim().toLowerCase(); 
@@ -56,9 +63,14 @@ const App = () => {
     } else if (isNumberAdded) {
       alert(`${newNumber} is already added to phonebook`)
     } else {
-      const newPersons = persons.concat(numberObject)
-      setPersons(newPersons)
-      setPersonsToShow(newPersons)
+
+      axios 
+        .post("http://localhost:3001/persons", numberObject)
+        .then(response => {
+          setPersons(persons.concat(response.data))
+          setNewName("")
+          setNewNumber("")
+        }) 
     } 
   }
 
@@ -73,11 +85,11 @@ const App = () => {
   }
 
  const handleFilter = (event) => {
-    const searchName = event.target.value.trim().toLowerCase();
-    const filteredPersons = searchName ? persons.filter(person => person.name.toLowerCase().includes(searchName)) 
-    : persons;
-    setPersonsToShow(filteredPersons)
+     setFilterName(event.target.value.trim().toLowerCase())
  }
+ const filteredPersons = filterName
+    ? persons : persons.filter(person => person.name.toLowerCase().includes(filterName))
+  console.log(filteredPersons)
   return (
     <div>
       <h2>Phonebook</h2>
@@ -85,14 +97,13 @@ const App = () => {
       <h2>add a new</h2>
       <Addperson onSubmit={addNewPerson} handleNameChange={handlePersonChange} handleNumberChange={handleNumberChange}/>
       <h2>Numbers</h2>
-      <ul>
-        {personsToShow.map(person => (
-          <Numbers key ={person.id}persons={person}/>
-        ))}
-      </ul>
+        <ul>
+          {filteredPersons.map(person => (
+            <Numbers key ={person.id}persons={person}/>
+          ))}
+        </ul>
     </div>
   )
-
 }
 
 export default App

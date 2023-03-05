@@ -6,7 +6,7 @@ const Header = ({ course }) => {
     const styles = {
       fontWeight: "bold",
     };
-    return (
+    return ( 
       <p style={styles}>Number of exercises {sumOfExercises}</p>
     );
   };
