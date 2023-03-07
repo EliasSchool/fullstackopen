@@ -1,80 +1,83 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import contacts from './services/persons'
-const Numbers = ({ persons }) => {
-  return (
-    <li key={persons.id}>{persons.name} {persons.number}</li>
-  )
-}
+import personsDB from './services/persons'
+import Contacts from './components/Contacts'
+import Addperson from './components/Addperson'
+import Filter from './components/Filter'
+import Notification from './components/Notification'
 
-const Filter = ( { handleFilter, text}) => {
-  return ( 
-    <form>
-        filter shown with<input onChange={handleFilter}></input>
-      </form>
-  )
-}
 
-const Addperson =  (props) => {
-  return (
-  <form onSubmit={props.onSubmit} >
-  <div>
-    name: <input onChange={props.handleNameChange}/>
-  </div>
-  <div>
-    number: <input onChange={props.handleNumberChange}/>
-  </div>
-  <div>
-    <button type="submit">add</button>
-  </div>
-</form>
-  )
-}
+
 const App = () => {
   const [persons, setPersons] = useState([]) 
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filterName, setFilterName] = useState('')
+  const [message, setMessage] = useState(null)
 
   useEffect(() => {
-    contacts
+    personsDB
       .GetPersons()
       .then(response => {
-              setPersons(response.data)
+              console.log("response", response)
+              setPersons(response) 
             }) 
   }, [])
 
 
 
-  const addNewPerson = (event) => {
+  const addNewPerson = (event, id) => {
     event.preventDefault()
     const numberObject = {
-      name : newName,
-      number: newNumber, 
+      name : newName.trim(),
+      number: newNumber.trim(), 
     }
+    
+    console.log(id,"t")
     const isPersonAdded = persons.some(person =>  {
       return person.name.toLowerCase() === newName.trim().toLowerCase(); 
     })
-    const isNumberAdded = persons.some(person =>  {;
-      return person.number === newNumber;  
-    })
-    if (isPersonAdded) {
-      alert(`${newName} is already added to phonebook`)
-    } else if (isNumberAdded) {
-      alert(`${newNumber} is already added to phonebook`)
-    } else {
 
-      axios 
-        .post("http://localhost:3001/persons", numberObject)
-        .then(response => {
-          setPersons(persons.concat(response.data))
-          setNewName("")
-          setNewNumber("")
-        }) 
+    const idOfperson = persons.find(person => person.name.trim().toLowerCase() === newName.trim().toLowerCase())?.id;
+    
+    const isNumberAdded = persons.some(person =>  {
+      return person.number === newNumber.trim();  
+    })
+
+
+    if (isPersonAdded && isNumberAdded) {
+        alert(`${newName} is already added to phonebook`)
+      }
+    else if (isPersonAdded) {
+      if (window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)){
+        console.log(numberObject, idOfperson)
+        personsDB
+          .updateContact(idOfperson, {...numberObject, number : newNumber})
+              .then(response => {
+                console.log("response", response)
+                setPersons(([...persons.filter(person => person.id !== idOfperson), response]))
+              })
+              setMessage(`Updated ${newName}`)
+          }
+    }
+      else if (isNumberAdded) {
+        alert(`${newNumber} is already added to phonebook`)
+    }
+    else {
+      personsDB
+        .CreatePerson(numberObject)
+          .then(response => {
+            setPersons(persons.concat(response))
+            setMessage(`Added ${newName}`)
+          }) 
     } 
+
+    console.log(persons)
+    setTimeout(() => {
+      setMessage(null)
+    }, 3000) 
   }
 
-  //console.log(persons.map(person => console.log(person, "n")))
 
   const handlePersonChange = (event) => {
     setNewName(event.target.value)
@@ -86,24 +89,47 @@ const App = () => {
 
  const handleFilter = (event) => {
      setFilterName(event.target.value.trim().toLowerCase())
- }
- const filteredPersons = filterName
-    ? persons : persons.filter(person => person.name.toLowerCase().includes(filterName))
-  console.log(filteredPersons)
+  }
+
+  const filteredPersons = persons.filter(person =>
+    person.name.toLowerCase().includes(filterName.toLowerCase())
+  );
+
+  const handleDelete = (id, name) => {
+    if (window.confirm(`Delete ${name}?`)) {
+      personsDB 
+        .deleteContact(id)
+        .then(() => {
+          setPersons(persons.filter(person => person.id!== id))
+          setMessage(`Deleted ${name}`)
+
+        })
+        .catch (error => {
+          console.log(error)
+          setMessage(`Information of ${name} has alread been removed from server`)
+        })
+        setTimeout(() => {
+          setMessage(null)
+        }, 3000)
+
+      }
+  }
+
   return (
-    <div>
-      <h2>Phonebook</h2>
-      <Filter handleFilter={handleFilter}></Filter>
-      <h2>add a new</h2>
-      <Addperson onSubmit={addNewPerson} handleNameChange={handlePersonChange} handleNumberChange={handleNumberChange}/>
-      <h2>Numbers</h2>
-        <ul>
-          {filteredPersons.map(person => (
-            <Numbers key ={person.id}persons={person}/>
-          ))}
-        </ul>
-    </div>
-  )
+  <div>
+    <h2>Phonebook</h2>
+    <Notification message={message}/>
+    <Filter handleFilter={handleFilter}></Filter>
+    <h2>add a new</h2>
+      <Addperson onSubmit={addNewPerson} handleNameChange={handlePersonChange} handleNumberChange={handleNumberChange} id={filteredPersons.map(person => person.id)}/>
+    <h2>Numbers</h2>
+      <ul>
+        {filteredPersons.map(person => (
+          <Contacts key ={person.id} persons={person} handleDelete={handleDelete}/>
+        ))}
+      </ul>
+  </div>
+)
 }
 
 export default App
