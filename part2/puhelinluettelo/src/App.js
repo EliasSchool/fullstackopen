@@ -111,10 +111,9 @@ const App = () => {
         setTimeout(() => {
           setMessage(null)
         }, 3000)
-
       }
   }
-
+  
   return (
   <div>
     <h2>Phonebook</h2>
