@@ -72,7 +72,6 @@ const App = () => {
           }) 
     } 
 
-    console.log(persons)
     setTimeout(() => {
       setMessage(null)
     }, 3000) 
