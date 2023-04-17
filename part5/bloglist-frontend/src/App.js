@@ -47,7 +47,6 @@ const App = () => {
       setUser(user)
       setUsername('')
       setPassword('')
-      console.log(user)
     } catch (exception) {
       setMessage('error: wrong username or password', true)
       setTimeout(() => {
@@ -68,7 +67,6 @@ const App = () => {
       .create(blogObject)
       .then(returnedBlog => {
         setBlogs(blogs.concat(returnedBlog))
-        console.log(returnedBlog)
       })
     setMessage(`a new blog ${blogObject.title} by ${blogObject.author} has been added`)
     setTimeout(() => {
@@ -78,7 +76,6 @@ const App = () => {
 
   const handleUpdate = async (updatedBlog, id) => {
     await blogService.update(id, updatedBlog)
-    console.log(updateBlog)
     setBlogupdate(updateBlog + 1)
   }
 
